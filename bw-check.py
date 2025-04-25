@@ -42,8 +42,8 @@ class StationData:
         Returns:
             tuple: Station name, last detection time, and species data
         """
-        debug_print('Parsing station data')
         data = json.loads(self.response().content)
+        debug_print('Parsing station data')
         station_data = data['data']['station']
         name = station_data['name']
         last_detect = datetime.fromisoformat(station_data['latestDetectionAt'])
