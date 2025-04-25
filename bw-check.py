@@ -208,7 +208,7 @@ class MqttSender:
                              auth={'username':self.username,'password':self.password})
             debug_print('MQTT messages sent')
             return 'OK'
-        except ConnectionError as e:
+        except Exception as e:
             debug_print(f"MQTT ERROR: {e}")
             return "MQTT ERROR"
 
