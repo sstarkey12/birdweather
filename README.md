@@ -36,7 +36,7 @@ This is what you may see on first run, if you haven't created a `.ini` file alre
 2025-04-24 23:22:28.196406: Creating new config file bw-check.ini with section location
 2025-04-24 23:22:28.196757: Creating new config file bw-check.ini with section birdweather
 2025-04-24 23:22:28.197017: Creating new config file bw-check.ini with section mqtt
-2025-04-24 23:22:34.402617: OFFLINE - MQTT ERROR
+2025-04-24 23:22:34.402617: ONLINE - MQTT ERROR
 ```
 You'll need to edit the config file now.
 
@@ -101,8 +101,8 @@ This format works for me, so I use it. I use the JSON data for Node-RED and use 
 Topic organization is as follows:
 ```
 birdweather
-    {station name}
-        stats = stationID, lastDetect, timeNow
+    {station name} = ONLINE
+        stats = {"stationID":"2265","lastDetect":"YYYY-MM-DDTHH:MM:SS-TZ:TZ","timeNow":"..."}
         TopHourlySpecies = {"bird name": count, ...}
             json = {"hourlytopspecies":[{"name":"bird name", "count": count}, ...]}
             plain = bird name: count, ...
