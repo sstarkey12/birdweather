@@ -115,9 +115,9 @@ class Configuration:
         self.config_vars = config_values
         self.create = create
         self.config = self.import_config()
-        for key in self.config_vars:
+        for key in self.config:
             if not hasattr(self, key):
-                setattr(self, key, self.config_vars[key])
+                setattr(self, key, self.config[key])
 
     def new_config(self):
         """Create new config file
