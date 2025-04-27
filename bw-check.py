@@ -253,6 +253,8 @@ def between_sunrise_sunset(latitude, longitude, timezone="America/Chicago",
     s = sun(city.observer, now_time, tzinfo="America/Chicago")
     sunrise_offset_time = s["sunrise"] + timedelta(hours=float(rise_offset))
     sunset_offset_time = s["sunset"] + timedelta(hours=float(set_offset))
+    debug_print(f'Sunrise {rise_offset}: {sunrise_offset_time.strftime("%H:%M")}, ' \
+                f'Sunset +{set_offset}: {sunset_offset_time.strftime("%H:%M")}')
     return bool(sunrise_offset_time < now_time < sunset_offset_time)
 
 
@@ -289,10 +291,15 @@ if run.limit_times == 'True':
                               run.sunrise_offset, run.sunset_offset):
         pass
     else:
+        debug_print('Not between sunrise and sunset, exiting')
         sys.exit()
 # create hourly and daily StationData objects from the queries
-hourly_query = '{station(id: ' + birdweather.config["station_id"] + '), {coords{lat, lon}, id, latestDetectionAt, name, topSpecies(limit: 10, period: {count: 1, unit: "hour"}) {count, species {commonName}, speciesId}}}'
-daily_query = '{station(id: ' + birdweather.config["station_id"] + '), {coords{lat, lon}, id, latestDetectionAt, name, topSpecies(limit: 40, period: {count: 1, unit: "day"}) {count, species {commonName}, speciesId}}}'
+hourly_query = '{station(id: ' + birdweather.config["station_id"] + '), {coords{lat, lon}, ' \
+'id, latestDetectionAt, name, topSpecies(limit: 10, period: {count: 1, unit: "hour"}) ' \
+'{count, species {commonName}, speciesId}}}'
+daily_query = '{station(id: ' + birdweather.config["station_id"] + '), {coords{lat, lon}, ' \
+'id, latestDetectionAt, name, topSpecies(limit: 40, period: {count: 1, unit: "day"}) ' \
+'{count, species {commonName}, speciesId}}}'
 hour = StationData(
     birdweather.url,
     birdweather.station_id,
@@ -330,8 +337,8 @@ mqtt_payloads = ['{ "stationID":"' + hour.station_id
                         day.plain,
                         online_status_msg]
 mqtt_msgs = []
-for i in range(len(mqtt_topic_mods)):
-    build_tuple = (mqtt_topic_base + mqtt_topic_mods[i], mqtt_payloads[i], 0, False)
+for i, mod in enumerate(mqtt_topic_mods):
+    build_tuple = (mqtt_topic_base + mod, mqtt_payloads[i], 0, False)
     mqtt_msgs.append(build_tuple)
 server = MqttSender(mqtt.host, mqtt.port, mqtt.username, mqtt.password)
 status_msg = server.send(mqtt_msgs)
