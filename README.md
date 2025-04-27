@@ -1,4 +1,4 @@
-# birdweather
+# birdweather-checker
 First off, I need to thank the folks over at [Birdweather](https://www.birdweather.com) -- we discovered their hardware on Kickstarter and the product is honestly, great. We got our PUC, mounted it ouside under an eave, plugged in power and it runs nearly constantly. They also offer a couple different APIs to pull data out if you want, as well as a great mobile app and website. We love our PUC! (not a paid advertisement, we really do, and really like what they offer)
 
 This script was written so I could get more learnt on python as well as have a way to display data from my wife's Birdweather PUC via Home Assistant. I couldn't really find anything premade so I also decided to learn a little about GraphiQL API at the same time. I'm absolutely positive that anyone out there could probably build this better. I'm absolutely positive that this is probably not the best way to do what I'm trying to achieve. 
