@@ -1,5 +1,5 @@
 #!/usr/bin/python3 bw-check.py
-"""birdweather station check v1.2
+"""birdweather station check v1.0
 This script checks the status of a birdweather station and sends the data to an MQTT broker
 """
 import os
