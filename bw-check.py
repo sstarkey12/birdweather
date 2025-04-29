@@ -260,7 +260,16 @@ def between_sunrise_sunset(latitude, longitude, timezone="America/Chicago",
     sunset_offset_time = s["sunset"] + timedelta(hours=float(set_offset))
     debug_print(f'Sunrise {rise_offset}: {sunrise_offset_time.strftime("%H:%M")}, ' \
                 f'Sunset +{set_offset}: {sunset_offset_time.strftime("%H:%M")}')
-    return bool(sunrise_offset_time < now_time < sunset_offset_time)
+    if bool(sunrise_offset_time < now_time < sunset_offset_time):
+        time_diff = str(now_time - sunrise_offset_time)
+        time_diff = time_diff.split(':')
+        if time_diff[0] == '0':
+            hour_diff = '1'
+        else:
+            hour_diff = time_diff[0]
+        return hour_diff
+    return False
+    # return bool(sunrise_offset_time < now_time < sunset_offset_time)
 
 if __name__ == "__main__":
     # set up the default config variables and load the configs in
@@ -292,18 +301,19 @@ if __name__ == "__main__":
         debug_print(f'MQTT: {mqtt.config}')
     # check if we should run the script based on sunrise and sunset times
     if run.limit_times == 'True':
-        if between_sunrise_sunset(location.lat, location.lon, location.tz,
-                                run.sunrise_offset, run.sunset_offset):
-            pass
-        else:
+        time_diff = between_sunrise_sunset(location.lat, location.lon, location.tz,
+                                run.sunrise_offset, run.sunset_offset)
+        if time_diff == False:
             debug_print('Not between sunrise and sunset, exiting')
             sys.exit()
+        
+            
     # create hourly and daily StationData objects from the queries
     hourly_query = '{station(id: ' + birdweather.config["station_id"] + '), {coords{lat, lon}, ' \
     'id, latestDetectionAt, name, topSpecies(limit: 10, period: {count: 1, unit: "hour"}) ' \
     '{count, species {commonName}, speciesId}}}'
     daily_query = '{station(id: ' + birdweather.config["station_id"] + '), {coords{lat, lon}, ' \
-    'id, latestDetectionAt, name, topSpecies(limit: 40, period: {count: 1, unit: "day"}) ' \
+    'id, latestDetectionAt, name, topSpecies(limit: 40, period: {count: ' + time_diff + ', unit: "hour"}) ' \
     '{count, species {commonName}, speciesId}}}'
     hour = StationData(
         birdweather.url,
