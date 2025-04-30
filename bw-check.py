@@ -45,9 +45,16 @@ class StationData:
         Returns:
             tuple: Station name, last detection time, and species data
         """
-        if self.status_msg != 'OK':
+        try:
+            data = json.loads(self.response().content)
+        except AttributeError:
+            debug_print('NO DATA TO PARSE')
+            self.status_msg = 'NO DATA TO PARSE'
             return None
-        data = json.loads(self.response().content)
+        except json.JSONDecodeError:
+            debug_print('JSON DECODE ERROR')
+            self.status_msg = 'JSON DECODE ERROR'
+            return None
         debug_print('Parsing station data')
         station_data = data['data']['station']
         name = station_data['name']
@@ -68,13 +75,17 @@ class StationData:
         try:
             debug_print('Fetching data from Birdweather API')
             response_data = requests.post(self.url, json={'query': self.query},timeout=20)
+        except requests.exceptions.ConnectionError:
+            debug_print('CONNECTION ERROR')
+            self.status_msg = 'CONNECTION ERROR'
+            return None
+        except requests.exceptions.Timeout:
+            debug_print('TIMEOUT ERROR')
+            self.status_msg = 'TIMEOUT ERROR'
+            return None
         except requests.exceptions.RequestException as e:
             debug_print('ERROR FETCHING DATA: ' + str(e))
             self.status_msg = 'ERROR FETCHING DATA: ' + str(e)
-            return None
-        except Timeout:
-            debug_print('TIMEOUT ERROR')
-            self.status_msg = 'TIMEOUT ERROR'
             return None
         if response_data.status_code != 200:
             debug_print('BAD RESPONSE: ' + str(response_data.status_code))

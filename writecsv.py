@@ -7,9 +7,11 @@ def write_csv(file_path, data):
         file_path (str): filename
         data (list): ['data1', 'datat2', 'data3']
     """
-    with open(file_path, 'w', newline='') as csvfile:
+    with open(file_path, 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(data)
+    csvfile.close()   
+    
 
 if __name__ == '__main__':
     pass
