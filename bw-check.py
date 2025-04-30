@@ -392,5 +392,5 @@ if __name__ == "__main__":
     server = MqttSender(mqtt.host, mqtt.port, mqtt.username, mqtt.password)
     status_msg = server.send(mqtt_msgs)
     # record log message
-    writecsv.write_csv('testcounts.csv', [hour.count_total, day.count_total])
+    writecsv.write_csv('testcounts.csv', [time_now, hour.count_total, day.count_total])
     finish(online_status_msg, status_msg, hour.count_total, day.count_total, LOG_FILENAME, debug)
