@@ -314,7 +314,7 @@ if __name__ == "__main__":
     debug = bool(run.debug == 'True')
     # print the config info if we are in debug mode
     if debug:
-        debug_print('Debug mode is ON')
+        debug_print('*****Debug mode is ON*****')
         debug_print(f'Config file loaded: {CONFIG_FILENAME}')
         # debug_print(f'Location: {location.config}')
         # debug_print(f'Birdweather: {birdweather.config}')
