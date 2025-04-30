@@ -8,6 +8,7 @@ import json
 from datetime import datetime, timedelta
 from configparser import ConfigParser
 import requests
+from requests.exceptions import Timeout
 from paho.mqtt import publish
 from astral import LocationInfo
 from astral.sun import sun
@@ -16,7 +17,7 @@ import pytz
 CONFIG_FILENAME = 'bw-check.ini'
 LOG_FILENAME = 'bw-check.log'
 
-status_msg = 'OK'
+# status_msg = 'OK'
 
 class StationData:
     """ Class to get data from Birdweather API
@@ -29,19 +30,22 @@ class StationData:
         json_name (str): Name of the JSON string to save data to
     """
     def __init__(self, url, station_id, **kwargs):
+        self.status_msg = 'OK'
         self.url = url
         self.station_id = station_id
         self.period = kwargs.get("period", 1.5)
         self.query = kwargs.get("query", "")
         self.json_name = kwargs.get("json_name", "")
         self.name, self.last_detect, self.species = self.station_data()
-        self.status_msg = 'OK'
+        
 
     def station_data(self):
         """Get station data from the Birdweather API
         Returns:
             tuple: Station name, last detection time, and species data
         """
+        if self.status_msg != 'OK':
+            return None
         data = json.loads(self.response().content)
         debug_print('Parsing station data')
         station_data = data['data']['station']
@@ -62,10 +66,14 @@ class StationData:
         """
         try:
             debug_print('Fetching data from Birdweather API')
-            response_data = requests.post(self.url, json={'query': self.query},timeout=10)
+            response_data = requests.post(self.url, json={'query': self.query},timeout=20)
         except requests.exceptions.RequestException as e:
             debug_print('ERROR FETCHING DATA: ' + str(e))
             self.status_msg = 'ERROR FETCHING DATA: ' + str(e)
+            return None
+        except Timeout:
+            debug_print('TIMEOUT ERROR')
+            self.status_msg = 'TIMEOUT ERROR'
             return None
         if response_data.status_code != 200:
             debug_print('BAD RESPONSE: ' + str(response_data.status_code))
@@ -271,6 +279,18 @@ def between_sunrise_sunset(latitude, longitude, timezone="America/Chicago",
     return False
     # return bool(sunrise_offset_time < now_time < sunset_offset_time)
 
+def finish(online_status_msg, status_msg, hour_count, day_count, log_filename, debug):
+    debug_print('Writing to log file')
+    
+    last_status = debug_print(f'{online_status_msg} - {status_msg} '
+                            f'- {hour_count}/hr, {day_count}/day')
+    with open(log_filename, 'a', encoding='utf-8') as log_file:
+        log_file.write(last_status + '\n')
+    log_file.close()
+    if not debug:
+        print(last_status)
+    sys.exit()
+
 if __name__ == "__main__":
     # set up the default config variables and load the configs in
     mqtt_vars = {'host': '192.168.1.1',
@@ -295,10 +315,10 @@ if __name__ == "__main__":
     # print the config info if we are in debug mode
     if debug:
         debug_print('Debug mode is ON')
-        debug_print(f'Config file: {CONFIG_FILENAME}')
-        debug_print(f'Location: {location.config}')
-        debug_print(f'Birdweather: {birdweather.config}')
-        debug_print(f'MQTT: {mqtt.config}')
+        debug_print(f'Config file loaded: {CONFIG_FILENAME}')
+        # debug_print(f'Location: {location.config}')
+        # debug_print(f'Birdweather: {birdweather.config}')
+        # debug_print(f'MQTT: {mqtt.config}')
     # check if we should run the script based on sunrise and sunset times
     if run.limit_times == 'True':
         time_diff = between_sunrise_sunset(location.lat, location.lon, location.tz,
@@ -306,8 +326,6 @@ if __name__ == "__main__":
         if time_diff == False:
             debug_print('Not between sunrise and sunset, exiting')
             sys.exit()
-        
-            
     # create hourly and daily StationData objects from the queries
     hourly_query = '{station(id: ' + birdweather.config["station_id"] + '), {coords{lat, lon}, ' \
     'id, latestDetectionAt, name, topSpecies(limit: 10, period: {count: 1, unit: "hour"}) ' \
@@ -322,6 +340,8 @@ if __name__ == "__main__":
         query=hourly_query,
         json_name='hourlytopspecies')
     status_msg = hour.status_msg
+    if status_msg != 'OK':
+        finish('---', status_msg, '---', '---', LOG_FILENAME, debug)
     day = StationData(
         birdweather.url,
         birdweather.station_id,
@@ -329,6 +349,8 @@ if __name__ == "__main__":
         query=daily_query,
         json_name='dailytopspecies')
     status_msg = day.status_msg
+    if status_msg != 'OK':
+        finish('---', status_msg, hour.count_total, '---', LOG_FILENAME, debug)
     # check if the station is online
     if hour.online():
         online_status_msg = "ONLINE"
@@ -358,11 +380,4 @@ if __name__ == "__main__":
     server = MqttSender(mqtt.host, mqtt.port, mqtt.username, mqtt.password)
     status_msg = server.send(mqtt_msgs)
     # record log message
-    debug_print('Writing to log file')
-    last_status = debug_print(f'{online_status_msg} - {status_msg} '
-                              f'- {hour.count_total}/hr, {day.count_total}/day')
-    with open(LOG_FILENAME, 'a', encoding='utf-8') as log_file:
-        log_file.write(last_status + '\n')
-    log_file.close()
-    if not debug:
-        print(last_status)
+    finish(online_status_msg, status_msg, hour.count_total, day.count_total, LOG_FILENAME, debug)
